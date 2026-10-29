@@ -1476,7 +1476,7 @@ export function ThreadsSettingsPanel() {
   const settings = useScopedSettings();
   const updateSettings = useUpdateScopedSettings();
   const navigate = useNavigate();
-  const { environment, connectedEnvironments, target, scope } = useSettingsScope();
+  const { environment, connectedEnvironments, target, targets, scope } = useSettingsScope();
   const isProjectScope = scope.kind === "project" || scope.kind === "checkout";
   const environmentId = environment?.environmentId ?? null;
   const hasServerTargets = connectedEnvironments.length > 0;
@@ -1490,8 +1490,10 @@ export function ThreadsSettingsPanel() {
     (target) => target.serverConfig?.environment.capabilities.threadAutoSettlementScope === true,
   );
   const supportsAutoSettleSnoozedOnMerge = connectedEnvironments.every(
-    (target) =>
-      target.serverConfig?.environment.capabilities.threadAutoSettleSnoozedOnMerge === true,
+    (entry) => entry.serverConfig?.environment.capabilities.threadAutoSettleSnoozedOnMerge === true,
+  );
+  const anyTargetHasAutoSettleOnMerge = targets.some(
+    (entry) => entry.settings.sidebarAutoSettleOnMerge === true,
   );
 
   const textGenerationProviders = serverProviders.filter(
@@ -1643,7 +1645,7 @@ export function ThreadsSettingsPanel() {
               />
             }
           />
-          {settings.sidebarAutoSettleOnMerge && supportsAutoSettleSnoozedOnMerge ? (
+          {anyTargetHasAutoSettleOnMerge && supportsAutoSettleSnoozedOnMerge ? (
             <SettingsRow
               serverScoped
               settingKeys={["sidebarAutoSettleSnoozedOnMerge"]}
