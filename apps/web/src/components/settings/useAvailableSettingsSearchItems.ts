@@ -11,6 +11,7 @@ import { useEnvironmentQuery } from "~/state/query";
 import { useEnvironmentScope } from "~/state/session";
 import { isWslSettingsRowVisible } from "./ConnectionsSettings.logic";
 import { isProviderSettingsEnvironmentAvailable } from "./ProviderSettingsPanel.logic";
+import { resolveScopedSettingsTargets, selectScopedSettingsEnvironments } from "./scopedSettings";
 import { resolveSettingsScope, type SettingsScopeSearch } from "./settingsScope";
 import { useSettingsProjectGroups } from "./useSettingsProjectGroups";
 import {
@@ -45,11 +46,16 @@ export function useAvailableSettingsSearchItems(scopeSearch: SettingsScopeSearch
     ) === true;
   const hasThreadAutoSettlement =
     getThreadAutoSettlementSearchAvailability(environments).eligibleEnvironmentIds.length > 0;
-  const hasThreadAutoSettleSnoozedOnMerge = hasThreadAutoSettleSnoozedOnMergeInScope(
-    environments,
-    resolvedScope,
-  );
   const primaryEnvironmentId = usePrimaryEnvironmentId();
+  // The Threads panel hides the switch unless merge settlement is on for a scoped target.
+  const hasScopedAutoSettleOnMerge = resolveScopedSettingsTargets(
+    resolvedScope,
+    selectScopedSettingsEnvironments(resolvedScope, environments, primaryEnvironmentId)
+      .connectedEnvironments,
+  ).some((target) => target.settings.sidebarAutoSettleOnMerge === true);
+  const hasThreadAutoSettleSnoozedOnMerge =
+    hasScopedAutoSettleOnMerge &&
+    hasThreadAutoSettleSnoozedOnMergeInScope(environments, resolvedScope);
   const canMaintain = useEnvironmentScope(primaryEnvironmentId, AuthEnvironmentMaintainScope);
   const hasPeerLinkHost = usePeerLinkHosts().length > 0;
   const cloudLinkState = usePrimaryCloudLinkState().data;

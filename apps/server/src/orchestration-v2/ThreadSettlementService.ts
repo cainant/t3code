@@ -126,6 +126,7 @@ function pullRequestSettles(
   >,
   pullRequest: SettlementPullRequest,
   autoSettleOnMerge: boolean,
+  snoozed: boolean,
 ): boolean {
   if (pullRequest.state !== "closed" && (pullRequest.state !== "merged" || !autoSettleOnMerge)) {
     return false;
@@ -141,7 +142,13 @@ function pullRequestSettles(
   if (Number.isNaN(pullRequestAtMs)) return false;
   if (pullRequestAtMs < userAnchorMs) return false;
   const snoozedAtMs = toMillis(thread.snoozedAt);
-  if (pullRequest.state === "merged" && snoozedAtMs !== null && pullRequestAtMs < snoozedAtMs) {
+  // `snoozedAt` outlives the timer, so only an active snooze can reject an earlier merge.
+  if (
+    snoozed &&
+    pullRequest.state === "merged" &&
+    snoozedAtMs !== null &&
+    pullRequestAtMs < snoozedAtMs
+  ) {
     return false;
   }
   return true;
@@ -234,7 +241,7 @@ export function resolveAutoSettlementAt(input: {
   if (
     pullRequest !== null &&
     (!snoozed || pullRequest.state === "merged") &&
-    pullRequestSettles(thread, pullRequest, input.autoSettleOnMerge)
+    pullRequestSettles(thread, pullRequest, input.autoSettleOnMerge, snoozed)
   ) {
     return DateTime.makeUnsafe(activityAtMs);
   }

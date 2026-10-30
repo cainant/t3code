@@ -1593,6 +1593,26 @@ describe("isSnoozed", () => {
     ).toBeNull();
   });
 
+  it("settles an earlier merge once the snooze timer has expired", () => {
+    const thread = shell({
+      snoozedAt: at(-2 * DAY_MS),
+      snoozedUntil: at(-1_000),
+      status: "completed",
+      latestRunCompletedAt: at(-DAY_MS),
+    });
+
+    expect(ThreadSettlementService.isSnoozed(thread, NOW_MS)).toBe(false);
+    expect(
+      ThreadSettlementService.resolveAutoSettlementAt({
+        thread,
+        pullRequest: { state: "merged", mergedAt: DateTime.formatIso(at(-3 * DAY_MS)) },
+        nowMs: NOW_MS,
+        autoSettleAfterDays: null,
+        autoSettleOnMerge: true,
+      }),
+    ).not.toBeNull();
+  });
+
   it("requires merge settlement to be enabled before snoozed-on-merge applies", () => {
     const thread = shell({
       ...snoozed,
